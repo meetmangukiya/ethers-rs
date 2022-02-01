@@ -16,7 +16,7 @@ pub mod contract;
 use contract::Context;
 
 pub mod rawabi;
-mod rustfmt;
+pub mod rustfmt;
 mod source;
 mod util;
 
@@ -78,6 +78,11 @@ pub struct Abigen {
 impl Abigen {
     /// Creates a new builder with the given ABI JSON source.
     pub fn new<S: AsRef<str>>(contract_name: &str, abi_source: S) -> Result<Self> {
+        return Self::new_string(&contract_name.to_string(), abi_source);
+    }
+
+    /// Creates a new builder with the given ABI JSON source.
+    pub fn new_string<S: AsRef<str>>(contract_name: &String, abi_source: S) -> Result<Self> {
         let abi_source = abi_source.as_ref().parse()?;
         Ok(Self {
             abi_source,

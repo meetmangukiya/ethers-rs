@@ -1,34 +1,35 @@
 [package]
-name = "ethers-contract-abigen"
-version = "0.6.0"
 authors = ["Nicholas Rodrigues Lordello <nlordell@gmail.com>", "Georgios Konstantopoulos <me@gakonst.com>"]
-edition = "2018"
-license = "MIT OR Apache-2.0"
 description = "Code generation for type-safe bindings to Ethereum smart contracts"
+edition = "2018"
 homepage = "https://docs.rs/ethers"
-repository = "https://github.com/gakonst/ethers-rs"
 keywords = ["ethereum", "web3", "celo", "ethers"]
+license = "MIT OR Apache-2.0"
+name = "ethers-contract-abigen"
+repository = "https://github.com/gakonst/ethers-rs"
+version = "0.6.0"
 
 [dependencies]
-ethers-core = { version = "^0.6.0", path = "../../ethers-core", features = ["macros"] }
+ethers-core = {version = "^0.6.0", path = "../../ethers-core", features = ["macros"]}
 
 Inflector = "0.11"
+cfg-if = "1.0.0"
+clap = {version = "3.0.13", features = ["derive"]}
+dunce = "1.0.2"
+eyre = "0.6"
+hex = {version = "0.4.2", default-features = false, features = ["std"]}
 proc-macro2 = "1.0"
 quote = "1.0"
+reqwest = {version = "0.11.3", default-features = false, features = ["blocking"], optional = true}
+serde = {version = "1.0.124", features = ["derive"]}
+serde_json = "1.0.61"
 syn = "1.0.12"
 url = "2.1"
-serde_json = "1.0.61"
-serde = { version = "1.0.124", features = ["derive"] }
-hex = { version = "0.4.2", default-features = false, features = ["std"] }
-reqwest = { version = "0.11.3", default-features = false, features = ["blocking"] , optional = true }
-cfg-if = "1.0.0"
-dunce = "1.0.2"
 walkdir = "2.3.2"
-eyre = "0.6"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # NOTE: this enables wasm compatibility for getrandom indirectly
-getrandom = { version = "0.2", features = ["js"] }
+getrandom = {version = "0.2", features = ["js"]}
 
 [package.metadata.docs.rs]
 all-features = true
@@ -40,5 +41,5 @@ openssl = ["reqwest/native-tls"]
 rustls = ["reqwest/rustls-tls"]
 
 [dev-dependencies]
+ethers-solc = {path = "../../ethers-solc", default-features = false, features = ["project-util"]}
 tempfile = "3.2.0"
-ethers-solc = { path = "../../ethers-solc", default-features = false, features = ["project-util"] }
