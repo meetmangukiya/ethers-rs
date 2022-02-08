@@ -128,6 +128,28 @@ where
             self.provider.watch(&self.filter).await.map_err(ContractError::MiddlewareError)?;
         Ok(EventStream::new(filter.id, filter, Box::new(move |log| self.parse_log(log))))
     }
+
+    /// Returns a stream for the event and metadata
+    pub async fn stream_with_meta(
+        &'a self,
+    ) -> Result<
+        // Wraps the FilterWatcher with a mapping to the event
+        EventStream<'a, FilterWatcher<'a, M::Provider, Log>, (LogMeta, D), ContractError<M>>,
+        ContractError<M>,
+    > {
+        let filter =
+            self.provider.watch(&self.filter).await.map_err(ContractError::MiddlewareError)?;
+        Ok(EventStream::new(filter.id, filter, Box::new(move |log| {
+            let meta = LogMeta::from(&log);
+            let log_result = self.parse_log(log);
+
+            if log_result.is_err() {
+                return Err(log_result.err().unwrap());
+            } else {
+                return Ok((meta, log_result.unwrap()));
+            }
+        })))
+    }
 }
 
 impl<'a, M, D> Event<'a, M, D>
@@ -150,6 +172,31 @@ where
             .await
             .map_err(ContractError::MiddlewareError)?;
         Ok(EventStream::new(filter.id, filter, Box::new(move |log| self.parse_log(log))))
+    }
+
+    /// Returns a subscription for the event with metadata
+    pub async fn subscribe_with_meta(
+        &'a self,
+    ) -> Result<
+        // Wraps the SubscriptionStream with a mapping to the event
+        EventStream<'a, SubscriptionStream<'a, M::Provider, Log>, (LogMeta, D), ContractError<M>>,
+        ContractError<M>,
+    > {
+        let filter = self
+            .provider
+            .subscribe_logs(&self.filter)
+            .await
+            .map_err(ContractError::MiddlewareError)?;
+        Ok(EventStream::new(filter.id, filter, Box::new(move |log| {
+            let meta = LogMeta::from(&log);
+            let log_result = self.parse_log(log);
+
+            if log_result.is_err() {
+                return Err(log_result.err().unwrap());
+            } else {
+                return Ok((meta, log_result.unwrap()));
+            }
+        })))
     }
 }
 
