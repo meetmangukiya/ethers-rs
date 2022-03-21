@@ -77,7 +77,7 @@ mod sputnik_helpers {
     use super::*;
 
     use crate::{sputnik::cache::SharedBackend, FAUCET_ACCOUNT};
-    use ethers::providers::Provider;
+    use ethers::providers::{Provider, Ws};
     use sputnik::backend::MemoryBackend;
 
     pub enum BackendKind<'a> {
@@ -103,15 +103,37 @@ mod sputnik_helpers {
             deployer.nonce = U256::from(1);
 
             let backend = if let Some(ref url) = self.fork_url {
-                let provider = Provider::try_from(url.as_str())?;
                 let init_state = backend.state().clone();
                 let cache = crate::sputnik::new_shared_cache(init_state);
-                let backend = SharedBackend::new(
-                    provider,
-                    cache,
-                    vicinity.clone(),
-                    self.fork_block_number.map(Into::into),
-                );
+                let backend;
+
+                let rt = tokio::runtime::Runtime::new().expect("could not start tokio rt");
+                if url.starts_with("http") {
+                    let provider = Provider::try_from(url.as_str())?;
+                    backend = SharedBackend::new(
+                        provider,
+                        cache,
+                        vicinity.clone(),
+                        self.fork_block_number.map(Into::into),
+                    );
+                } else if url.starts_with("ws") {
+                    let provider = rt.block_on(Provider::connect(url))?;
+                    backend = SharedBackend::new(
+                        provider,
+                        cache,
+                        vicinity.clone(),
+                        self.fork_block_number.map(Into::into),
+                    );
+                } else {
+                    let provider = rt.block_on(Provider::connect_ipc(url))?;
+                    backend = SharedBackend::new(
+                        provider,
+                        cache,
+                        vicinity.clone(),
+                        self.fork_block_number.map(Into::into),
+                    );
+                }
+
                 BackendKind::Shared(backend)
             } else {
                 BackendKind::Simple(backend)
@@ -125,12 +147,33 @@ mod sputnik_helpers {
             Ok(if let Some(ref url) = self.fork_url {
                 let provider = ethers::providers::Provider::try_from(url.as_str())?;
                 let rt = tokio::runtime::Runtime::new().expect("could not start tokio rt");
-                rt.block_on(crate::sputnik::vicinity(
-                    &provider,
-                    self.env.chain_id,
-                    self.fork_block_number,
-                    Some(self.env.tx_origin),
-                ))?
+
+                if url.starts_with("http") {
+                    let provider = Provider::try_from(url.as_str())?;
+                    rt.block_on(crate::sputnik::vicinity(
+                        &provider,
+                        self.env.chain_id,
+                        self.fork_block_number,
+                        Some(self.env.tx_origin),
+                    ))?
+                } else if url.starts_with("ws") {
+                    let ws = rt.block_on(Ws::connect(url))?;
+                    let provider = Provider::new(ws);
+                    rt.block_on(crate::sputnik::vicinity(
+                        &provider,
+                        self.env.chain_id,
+                        self.fork_block_number,
+                        Some(self.env.tx_origin),
+                    ))?
+                } else {
+                    let provider = rt.block_on(Provider::connect_ipc(url))?;
+                    rt.block_on(crate::sputnik::vicinity(
+                        &provider,
+                        self.env.chain_id,
+                        self.fork_block_number,
+                        Some(self.env.tx_origin),
+                    ))?
+                }
             } else {
                 self.env.sputnik_state()
             })

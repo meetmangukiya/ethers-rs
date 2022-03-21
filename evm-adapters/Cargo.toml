@@ -11,7 +11,7 @@ foundry-utils = { path = "./../utils" }
 
 sputnik = { package = "evm", git = "https://github.com/rust-blockchain/evm",  optional = true, features = ["tracing"] }
 
-ethers = { git = "https://github.com/gakonst/ethers-rs", default-features = false, features = ["solc-full"] }
+ethers = { git = "https://github.com/gakonst/ethers-rs", default-features = false, features = ["solc-full", "ws", "rustls", "ipc"] }
 ethers-core = { git = "https://github.com/gakonst/ethers-rs", default-features = false }
 eyre = "0.6.5"
 once_cell = "1.9.0"
